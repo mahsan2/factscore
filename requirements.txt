@@ -1,9 +1,10 @@
 streamlit
-streamlit-authenticator
+streamlit-authenticator==0.4.2
 pandas
 numpy
 scikit-learn
+lime
 matplotlib
-shap
 openpyxl
-xlsxwriter
+fpdf
+
