@@ -1,6 +1,6 @@
 streamlit
+streamlit-authenticator==0.2.3
 pandas
-scikit-learn
-joblib
 numpy
+scikit-learn
 openpyxl
