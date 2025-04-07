@@ -7,21 +7,28 @@ from sklearn.preprocessing import StandardScaler
 import joblib
 
 # --- 1. SETUP AUTH ---
+import streamlit_authenticator as stauth
+
+# Set up credentials dictionary
 credentials = {
     "usernames": {
         "zahed1": {
             "name": "Authorized User",
-            "password": '$2b$12$3J.QpuvRADGvYrXTi6tkfOtmRAgLfmzxlL19o1ebpHgN5NGwUiiJy'
+            "password": "$2b$12$3J.QpuvRADGvYrXTi6tkfOtmRAgLfmzxlL19o1ebpHgN5NGwUiiJy"
         }
     }
 }
 
+# Proper Authenticate instance
 authenticator = stauth.Authenticate(
-    credentials,
+    credentials=credentials,
     cookie_name="app_cookie",
     key="abcdef",
     cookie_expiry_days=1
 )
+
+# Streamlit login
+name, authentication_status, username = authenticator.login("Login", "main")
 
 
 # --- 2. CONDITIONAL ACCESS ---
