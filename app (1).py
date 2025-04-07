@@ -4,27 +4,26 @@ import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-import lime
-import lime.lime_tabular
-import matplotlib.pyplot as plt
-import base64
-from io import BytesIO
+import joblib
 
 # --- 1. SETUP AUTH ---
 names = ['Authorized User']
 usernames = ['zahed1']
+
+# Paste your hashed password here
 hashed_passwords = ['$2b$12$3J.QpuvRADGvYrXTi6tkfOtmRAgLfmzxlL19o1ebpHgN5NGwUiiJy']
 
 authenticator = stauth.Authenticate(names, usernames, hashed_passwords, 
                                      'app_cookie', 'abcdef', cookie_expiry_days=1)
 
-name, authentication_status, username = authenticator.login('Login', location='main')
+name, authentication_status, username = authenticator.login('Login', 'main')
 
 # --- 2. CONDITIONAL ACCESS ---
 if authentication_status:
     authenticator.logout('Logout', 'sidebar')
     st.title('🔒 Factor Weight Predictor')
 
+    # --- Upload Excel File ---
     uploaded_file = st.file_uploader("Upload your Excel file", type=['xlsx'])
 
     if uploaded_file:
@@ -32,7 +31,7 @@ if authentication_status:
         df.columns = ['Sample', 'Factor_Weight', 'A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12']
 
         for col in ['A5', 'A6']:
-            df[col] = df[col].replace(r'[\$,]', '', regex=True).astype(float)
+            df[col] = df[col].replace('[\$,]', '', regex=True).astype(float)
         for col in ['A3', 'A4', 'A10', 'A11']:
             df[col] = df[col].replace('%','',regex=True).astype(float)
 
@@ -49,6 +48,7 @@ if authentication_status:
 
         st.success("Model trained! Enter values below to make prediction.")
 
+        # --- Prediction Inputs ---
         with st.form("prediction_form"):
             A_inputs = [st.number_input(f"A{i+1}") for i in range(12)]
             submit = st.form_submit_button("Predict")
@@ -57,30 +57,10 @@ if authentication_status:
             A_inputs[9] = df['A10'].max() - A_inputs[9]  # A10 correction
             scaled_inputs = scaler.transform([A_inputs])
             prediction = model.predict(scaled_inputs)[0]
-            rounded_prediction = int(round(prediction))
-            st.metric("Predicted Factor Weight", rounded_prediction)
-
-            # LIME Explanation
-            explainer = lime.lime_tabular.LimeTabularExplainer(
-                training_data=X_scaled,
-                feature_names=X.columns,
-                mode='regression'
-            )
-            exp = explainer.explain_instance(scaled_inputs[0], model.predict, num_features=5)
-
-            st.subheader("🔍 LIME Explanation")
-            fig = exp.as_pyplot_figure()
-            st.pyplot(fig)
-
-            # Save explanation to a report
-            output = BytesIO()
-            fig.savefig(output, format='pdf')
-            pdf_bytes = output.getvalue()
-            b64_pdf = base64.b64encode(pdf_bytes).decode()
-            href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="lime_explanation_report.pdf">📄 Download Report</a>'
-            st.markdown(href, unsafe_allow_html=True)
+            st.metric("Predicted Factor Weight", round(prediction, 2))
 
 elif authentication_status is False:
     st.error('❌ Username or password is incorrect')
+
 elif authentication_status is None:
     st.warning('🔑 Please enter your username and password')
