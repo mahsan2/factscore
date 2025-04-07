@@ -2,32 +2,23 @@ import streamlit as st
 import streamlit_authenticator as stauth
 import pandas as pd
 import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import StandardScaler
 import lime
 import lime.lime_tabular
 import matplotlib.pyplot as plt
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import StandardScaler
+import base64
 from io import BytesIO
-from fpdf import FPDF
 
 # --- 1. SETUP AUTH ---
-credentials = {
-    "usernames": {
-        "zahed1": {
-            "name": "Authorized User",
-            "password": "$2b$12$3J.QpuvRADGvYrXTi6tkfOtmRAgLfmzxlL19o1ebpHgN5NGwUiiJy"
-        }
-    }
-}
+names = ['Authorized User']
+usernames = ['zahed1']
+hashed_passwords = ['$2b$12$3J.QpuvRADGvYrXTi6tkfOtmRAgLfmzxlL19o1ebpHgN5NGwUiiJy']
 
-authenticator = stauth.Authenticate(
-    credentials=credentials,
-    cookie_name="app_cookie",
-    key="abcdef",
-    cookie_expiry_days=1
-)
+authenticator = stauth.Authenticate(names, usernames, hashed_passwords, 
+                                     'app_cookie', 'abcdef', cookie_expiry_days=1)
 
-name, authentication_status, username = authenticator.login("Login", location="main")
+name, authentication_status, username = authenticator.login('Login', location='main')
 
 # --- 2. CONDITIONAL ACCESS ---
 if authentication_status:
@@ -41,7 +32,7 @@ if authentication_status:
         df.columns = ['Sample', 'Factor_Weight', 'A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12']
 
         for col in ['A5', 'A6']:
-            df[col] = df[col].replace('[\$,]', '', regex=True).astype(float)
+            df[col] = df[col].replace(r'[\$,]', '', regex=True).astype(float)
         for col in ['A3', 'A4', 'A10', 'A11']:
             df[col] = df[col].replace('%','',regex=True).astype(float)
 
@@ -56,12 +47,6 @@ if authentication_status:
         model = RandomForestRegressor(n_estimators=300, random_state=42)
         model.fit(X_scaled, y)
 
-        explainer = lime.lime_tabular.LimeTabularExplainer(
-            training_data=X_scaled,
-            feature_names=X.columns.tolist(),
-            mode="regression"
-        )
-
         st.success("Model trained! Enter values below to make prediction.")
 
         with st.form("prediction_form"):
@@ -69,33 +54,33 @@ if authentication_status:
             submit = st.form_submit_button("Predict")
 
         if submit:
-            A10_corrected = df['A10'].max() - A_inputs[9]
-            A_inputs[9] = A10_corrected
+            A_inputs[9] = df['A10'].max() - A_inputs[9]  # A10 correction
             scaled_inputs = scaler.transform([A_inputs])
             prediction = model.predict(scaled_inputs)[0]
-            st.metric("🎯 Predicted Factor Weight", round(prediction))
+            rounded_prediction = int(round(prediction))
+            st.metric("Predicted Factor Weight", rounded_prediction)
 
-            # LIME explanation
+            # LIME Explanation
+            explainer = lime.lime_tabular.LimeTabularExplainer(
+                training_data=X_scaled,
+                feature_names=X.columns,
+                mode='regression'
+            )
             exp = explainer.explain_instance(scaled_inputs[0], model.predict, num_features=5)
+
+            st.subheader("🔍 LIME Explanation")
             fig = exp.as_pyplot_figure()
             st.pyplot(fig)
 
-            # Save explanation and prediction in PDF
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", size=12)
-            pdf.cell(200, 10, txt="Prediction Report", ln=True, align="C")
-            pdf.cell(200, 10, txt=f"Predicted Factor Weight: {round(prediction)}", ln=True)
-            for feat, weight in exp.as_list():
-                pdf.cell(200, 10, txt=f"{feat}: {weight:.2f}", ln=True)
-
-            # Convert to downloadable
-            buffer = BytesIO()
-            pdf.output(buffer)
-            st.download_button("📄 Download Report", data=buffer.getvalue(), file_name="prediction_report.pdf")
+            # Save explanation to a report
+            output = BytesIO()
+            fig.savefig(output, format='pdf')
+            pdf_bytes = output.getvalue()
+            b64_pdf = base64.b64encode(pdf_bytes).decode()
+            href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="lime_explanation_report.pdf">📄 Download Report</a>'
+            st.markdown(href, unsafe_allow_html=True)
 
 elif authentication_status is False:
     st.error('❌ Username or password is incorrect')
-
 elif authentication_status is None:
     st.warning('🔑 Please enter your username and password')
