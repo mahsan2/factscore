@@ -1,6 +1,9 @@
 streamlit
-streamlit-authenticator==0.2.3
+streamlit-authenticator
 pandas
 numpy
 scikit-learn
+matplotlib
+shap
 openpyxl
+xlsxwriter
