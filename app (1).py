@@ -7,16 +7,22 @@ from sklearn.preprocessing import StandardScaler
 import joblib
 
 # --- 1. SETUP AUTH ---
-names = ['Authorized User']
-usernames = ['zahed1']
+credentials = {
+    "usernames": {
+        "zahed1": {
+            "name": "Authorized User",
+            "password": '$2b$12$3J.QpuvRADGvYrXTi6tkfOtmRAgLfmzxlL19o1ebpHgN5NGwUiiJy'
+        }
+    }
+}
 
-# Paste your hashed password here
-hashed_passwords = ['$2b$12$3J.QpuvRADGvYrXTi6tkfOtmRAgLfmzxlL19o1ebpHgN5NGwUiiJy']
+authenticator = stauth.Authenticate(
+    credentials,
+    cookie_name="app_cookie",
+    key="abcdef",
+    cookie_expiry_days=1
+)
 
-authenticator = stauth.Authenticate(names, usernames, hashed_passwords, 
-                                     'app_cookie', 'abcdef', cookie_expiry_days=1)
-
-name, authentication_status, username = authenticator.login('Login', 'main')
 
 # --- 2. CONDITIONAL ACCESS ---
 if authentication_status:
