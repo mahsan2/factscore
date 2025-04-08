@@ -4,17 +4,22 @@ import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
+import joblib
 
 # --- 1. SETUP AUTH ---
+import streamlit_authenticator as stauth
+
+# Set up credentials dictionary
 credentials = {
     "usernames": {
         "zahed1": {
             "name": "Authorized User",
-            "password": "$2b$12$KdRcm33QA7p7xKfxs51ZbOPc2s/Zn6a3yEAQNweHFkCZNU9u0C1gm"
+            "password": "$2b$12$oiEO0dtDbpmCXUL6ZU1oeeXcyBg/kepwwS9cuhbw00vzaEVi6VanK"
         }
     }
 }
 
+# Proper Authenticate instance
 authenticator = stauth.Authenticate(
     credentials=credentials,
     cookie_name="app_cookie",
@@ -22,13 +27,16 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=1
 )
 
-name, authentication_status, username = authenticator.login("Login", location="main")
+# Streamlit login
+name, authentication_status, username = authenticator.login("Login", "main")
+
 
 # --- 2. CONDITIONAL ACCESS ---
 if authentication_status:
-    authenticator.logout('Logout', location='sidebar')
+    authenticator.logout('Logout', 'sidebar')
     st.title('🔒 Factor Weight Predictor')
 
+    # --- Upload Excel File ---
     uploaded_file = st.file_uploader("Upload your Excel file", type=['xlsx'])
 
     if uploaded_file:
@@ -53,15 +61,17 @@ if authentication_status:
 
         st.success("Model trained! Enter values below to make prediction.")
 
+        # --- Prediction Inputs ---
         with st.form("prediction_form"):
             A_inputs = [st.number_input(f"A{i+1}") for i in range(12)]
             submit = st.form_submit_button("Predict")
 
         if submit:
-            A_inputs[9] = df['A10'].max() - A_inputs[9]
+            A_inputs[9] = df['A10'].max() - A_inputs[9]  # A10 correction
             scaled_inputs = scaler.transform([A_inputs])
             prediction = model.predict(scaled_inputs)[0]
-            st.metric("Predicted Factor Weight", round(prediction))
+            st.metric("Predicted Factor Weight", round(prediction, 2))
+
 elif authentication_status is False:
     st.error('❌ Username or password is incorrect')
 
