@@ -13,8 +13,9 @@ usernames = ['zahed1']
 # Paste your hashed password here
 hashed_passwords = ['$2b$12$3J.QpuvRADGvYrXTi6tkfOtmRAgLfmzxlL19o1ebpHgN5NGwUiiJy']
 
-authenticator = stauth.Authenticate(names, usernames, hashed_passwords, 
-                                     'app_cookie', 'abcdef', cookie_expiry_days=1)
+authenticator = stauth.Authenticate(
+    names, usernames, hashed_passwords, 'app_cookie', 'abcdef', 1
+)
 
 name, authentication_status, username = authenticator.login('Login', 'main')
 
