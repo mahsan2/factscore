@@ -4,24 +4,30 @@ import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-import joblib
 
 # --- 1. SETUP AUTH ---
-names = ['Authorized User']
-usernames = ['zahed1']
 
-# Paste your hashed password here
-hashed_passwords = ['$2b$12$3J.QpuvRADGvYrXTi6tkfOtmRAgLfmzxlL19o1ebpHgN5NGwUiiJy']
+credentials = {
+    "usernames": {
+        "zahed1": {
+            "name": "Authorized User",
+            "password": "$2b$12$KdRcm33QA7p7xKfxs51ZbOPc2s/Zn6a3yEAQNweHFkCZNU9u0C1gm"
+        }
+    }
+}
 
 authenticator = stauth.Authenticate(
-    names, usernames, hashed_passwords, 'app_cookie', 'abcdef', 1
+    credentials=credentials,
+    cookie_name="app_cookie",
+    key="abcdef",
+    cookie_expiry_days=1
 )
 
-name, authentication_status, username = authenticator.login('Login', 'main')
+name, authentication_status, username = authenticator.login("Login", location="main")
 
 # --- 2. CONDITIONAL ACCESS ---
 if authentication_status:
-    authenticator.logout('Logout', 'sidebar')
+    authenticator.logout("Logout", location="sidebar")
     st.title('🔒 Factor Weight Predictor')
 
     # --- Upload Excel File ---
@@ -47,7 +53,7 @@ if authentication_status:
         model = RandomForestRegressor(n_estimators=300, random_state=42)
         model.fit(X_scaled, y)
 
-        st.success("Model trained! Enter values below to make prediction.")
+        st.success("✅ Model trained! Enter values below to make prediction.")
 
         # --- Prediction Inputs ---
         with st.form("prediction_form"):
@@ -58,7 +64,7 @@ if authentication_status:
             A_inputs[9] = df['A10'].max() - A_inputs[9]  # A10 correction
             scaled_inputs = scaler.transform([A_inputs])
             prediction = model.predict(scaled_inputs)[0]
-            st.metric("Predicted Factor Weight", round(prediction, 2))
+            st.metric("Predicted Factor Weight", round(prediction))  # No decimal
 
 elif authentication_status is False:
     st.error('❌ Username or password is incorrect')
