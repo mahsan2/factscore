@@ -6,7 +6,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
 # --- 1. SETUP AUTH ---
-
 credentials = {
     "usernames": {
         "zahed1": {
@@ -23,15 +22,13 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=1
 )
 
-name, authentication_status, username = authenticator.login("Login", "main")
-
+name, authentication_status, username = authenticator.login("Login", location="main")
 
 # --- 2. CONDITIONAL ACCESS ---
 if authentication_status:
-    authenticator.logout("Logout", location="sidebar")
+    authenticator.logout('Logout', location='sidebar')
     st.title('🔒 Factor Weight Predictor')
 
-    # --- Upload Excel File ---
     uploaded_file = st.file_uploader("Upload your Excel file", type=['xlsx'])
 
     if uploaded_file:
@@ -54,19 +51,17 @@ if authentication_status:
         model = RandomForestRegressor(n_estimators=300, random_state=42)
         model.fit(X_scaled, y)
 
-        st.success("✅ Model trained! Enter values below to make prediction.")
+        st.success("Model trained! Enter values below to make prediction.")
 
-        # --- Prediction Inputs ---
         with st.form("prediction_form"):
             A_inputs = [st.number_input(f"A{i+1}") for i in range(12)]
             submit = st.form_submit_button("Predict")
 
         if submit:
-            A_inputs[9] = df['A10'].max() - A_inputs[9]  # A10 correction
+            A_inputs[9] = df['A10'].max() - A_inputs[9]
             scaled_inputs = scaler.transform([A_inputs])
             prediction = model.predict(scaled_inputs)[0]
-            st.metric("Predicted Factor Weight", round(prediction))  # No decimal
-
+            st.metric("Predicted Factor Weight", round(prediction))
 elif authentication_status is False:
     st.error('❌ Username or password is incorrect')
 
